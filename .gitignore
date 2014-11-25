@@ -52,3 +52,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# This repository only
+# Ignore diced_images directory for convenience
+diced_images/

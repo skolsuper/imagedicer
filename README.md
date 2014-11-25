@@ -8,9 +8,11 @@ No installation required.
 Usage:
 
 In linux:
+
     ```
     python imagedicer.py /path/to/image/file
     ```
+    
 In Mac OSX:
 
 In Windows:

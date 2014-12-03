@@ -7,8 +7,6 @@ import argparse
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 HTML_DIR = os.path.join(BASE_DIR, 'diced_images')
 
-STYLE = 'padding: 0; margin: 0; border-width: 0;'
-
 def dice(image_path, out_name, out_ext, outdir, slices):
     img = Image.open(image_path) # Load image 
     imgdir = os.path.join(outdir, out_name)
@@ -24,16 +22,34 @@ def dice(image_path, out_name, out_ext, outdir, slices):
     percent = 100.0 / slices
     
     html_file = open(os.path.join(HTML_DIR, out_name + '.html'), 'w+')
-    html_file.write(
-        '<table style="%s border-collapse: collapse; width: 100%%">\n' % STYLE
-        )
+    html_file.write('''
+        <style>
+            .dicedimage {
+                padding: 0; margin: 0; border-width: 0;
+            }
+            .dicedimage table {
+                border-collapse: collapse; width: 100%%; height: 100%%;
+            }
+            .dicedimage tr {
+                width: 100%%; height:%(percent)s%%;
+            }
+            .dicedimage td {
+                width: %(percent)s%%; height: 100%%;
+            }
+            .dicedimage img {
+                width: 100%%; height: 100%%;
+            }
+        </style>
+        <div class="dicedimage">
+            <table>
+        ''' % locals())
 
     left = 0 # Set the left-most edge
     upper = 0 # Set the top-most edge
     while (upper < imageHeight):
-        html_file.write(
-            '<tr style="%s width: 100%%; height:%s%%;">\n' % (STYLE, percent)
-            )
+
+        html_file.write('<tr>\n')
+        
         while (left < imageWidth):
             # If the bottom and right of the cropping box overruns the image.
             if (upper + sliceHeight > imageHeight and \
@@ -55,13 +71,10 @@ def dice(image_path, out_name, out_ext, outdir, slices):
             dice_path = os.path.join(imgdir, dice_filename)
             working_slice.save(dice_path)
             
-            html_file.write(
-                '<td style="%s width: %s%%; height: 100%%;">\n' % \
-                (STYLE, percent)
-                )
+            html_file.write('<td>\n')
             html_file.write(
                 '''
-                <img src="%s/%s" style="width: 100%%; height: 100%%;"></td>\n
+                <img src="%s/%s"></td>\n
                 ''' % (
                     diced_images_dir.split('/', 1)[1],
                     '/'.join([out_name, dice_filename])
@@ -72,7 +85,7 @@ def dice(image_path, out_name, out_ext, outdir, slices):
         html_file.write('</tr>\n')
         upper += sliceHeight # Increment the vertical position
         left = 0
-    html_file.write('</table>')
+    html_file.write('</table></div>')
 
 if __name__ == '__main__':
 
@@ -91,7 +104,7 @@ if __name__ == '__main__':
         fileName,
         fileExtension,
         diced_images_dir,
-        5
+        10
         )
 
     print "Successfully diced %s" % image_path

@@ -26,9 +26,10 @@ def dice(image_path, out_name, out_ext, outdir, slices):
         <style>
             .dicedimage {
                 padding: 0; margin: 0; border-width: 0;
+                height: 100%%; width: 100%%;
             }
             .dicedimage table {
-                border-collapse: collapse; width: 100%%; height: 100%%;
+                border-collapse: collapse; width: 100%%;
             }
             .dicedimage tr {
                 width: 100%%; height:%(percent)s%%;

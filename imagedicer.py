@@ -1,4 +1,4 @@
-import Image
+from PIL import Image
 import os
 import math
 import argparse
@@ -7,12 +7,23 @@ import argparse
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 HTML_DIR = os.path.join(BASE_DIR, 'diced_images')
 
+
 def dice(image_path, out_name, out_ext, outdir, slices):
-    img = Image.open(image_path) # Load image 
-    imgdir = os.path.join(outdir, out_name)
-    if not os.path.exists(imgdir):
-        os.makedirs(imgdir)
+
+    loaddir = outdir.split('/', 1)[1] # Path from html file to images
+    
+    img = Image.open(image_path) # Load image
     imageWidth, imageHeight = img.size # Get image dimensions
+
+    hourglass = Image.open('hourglass-small.png')
+    leftOffset = hourglass.size[0] / 2
+    upOffset = hourglass.size[1] / 2
+
+    placeholder_filename = 'placeholder.png'
+    placeholder = Image.new('L', img.size, color=255)
+    placeholder.paste(hourglass, (imageWidth/2 - leftOffset, imageHeight/2 - upOffset))
+    placeholder_path = os.path.join(outdir, placeholder_filename)
+    placeholder.save(placeholder_path)
 
     # Make sure the integer widths are bigger than the floats to avoid
     # making 1px wide slices at the edges 
@@ -24,7 +35,7 @@ def dice(image_path, out_name, out_ext, outdir, slices):
     html_file = open(os.path.join(HTML_DIR, out_name + '.html'), 'w+')
     html_file.write('''
         <style>
-            .dicedimage {
+            #dicedimage {
                 padding: 0; margin: 0; border-width: 0;
                 height: 100%%; width: 100%%;
             }
@@ -37,11 +48,12 @@ def dice(image_path, out_name, out_ext, outdir, slices):
                 padding: 0; margin: 0; border-width: 0;
             }
         </style>
-        <div class="dicedimage">
+        <div id="dicedimage">
         ''' % locals())
 
     left = 0 # Set the left-most edge
     upper = 0 # Set the top-most edge
+    dice_paths = []
     while (upper < imageHeight):
 
         html_file.write('<div class="dicedimage-row"><!--\n')
@@ -63,17 +75,20 @@ def dice(image_path, out_name, out_ext, outdir, slices):
                 bbox = (left, upper, left + sliceWidth, upper + sliceHeight)
             working_slice = img.crop(bbox) # Crop image based on created bounds
             # Save your new cropped image.
-            dice_filename = '_'.join(['dice', str(upper), str(left)]) + out_ext
-            dice_path = os.path.join(imgdir, dice_filename)
+            dice_name = '_'.join(['dice', str(upper), str(left)])
+            dice_filename = dice_name + out_ext
+            dice_path = os.path.join(outdir, dice_filename)
             working_slice.save(dice_path)
+            dice_paths.append(dice_path)
             
             html_file.write(
                 '''
-                --><img class="dicedimage-piece" src="%s/%s"><!--\n
-                ''' % (
-                    diced_images_dir.split('/', 1)[1],
-                    '/'.join([out_name, dice_filename])
-                    )
+                --><img class="dicedimage-piece"
+                data-image-path="%(loaddir)s/%(dice_filename)s"
+                data-top=%(upper)s
+                data_left=%(left)s
+                src="%(loaddir)s/%(placeholder_filename)s"><!--
+                ''' % locals()
                 )
 
             left += sliceWidth # Increment the horizontal position
@@ -81,6 +96,36 @@ def dice(image_path, out_name, out_ext, outdir, slices):
         upper += sliceHeight # Increment the vertical position
         left = 0
     html_file.write('</div>')
+    html_file.write('''
+        <script>
+            var dicedimageDiv = document.getElementById('dicedimage');
+            var pieces = document.getElementsByClassName('dicedimage-piece');
+            var imageBox = dicedimageDiv.parentNode;
+
+            imageBox.onscroll = function() {
+                for (var i = 0; i < pieces.length; i++) {
+                    if (pieces[i].hasAttribute('data-image-path') && isVisible(pieces[i])) {
+                        pieces[i].src = pieces[i].getAttribute('data-image-path');
+                        pieces[i].removeAttribute('data-image-path');
+                    }
+                }
+            }
+
+            function isVisible(elm) {
+                var boxWidth = imageBox.innerWidth || screen.availWidth;
+                var boxHeight = imageBox.innerHeight || screen.availHeight;
+
+                var top = elm.getAttribute('data-top');
+                var left = elm.getAttribute('data_left');
+                if (top < boxHeight && left < boxWidth) {
+                    return true;
+                }
+                else { return false; }
+            }
+        </script>
+        ''')
+    # for dice_path in dice_paths:
+
 
 if __name__ == '__main__':
 

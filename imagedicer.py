@@ -28,28 +28,23 @@ def dice(image_path, out_name, out_ext, outdir, slices):
                 padding: 0; margin: 0; border-width: 0;
                 height: 100%%; width: 100%%;
             }
-            .dicedimage table {
-                border-collapse: collapse; width: 100%%;
-            }
-            .dicedimage tr {
-                width: 100%%; height:%(percent)s%%;
-            }
-            .dicedimage td {
-                width: %(percent)s%%; height: 100%%;
+            .dicedimage-row {
+                width: %(imageWidth)spx; height: %(sliceHeight)spx;
+                padding: 0; margin: 0; border-width: 0;
             }
             .dicedimage img {
-                width: 100%%; height: 100%%;
+                display: inline;
+                padding: 0; margin: 0; border-width: 0;
             }
         </style>
         <div class="dicedimage">
-            <table>
         ''' % locals())
 
     left = 0 # Set the left-most edge
     upper = 0 # Set the top-most edge
     while (upper < imageHeight):
 
-        html_file.write('<tr>\n')
+        html_file.write('<div class="dicedimage-row"><!--\n')
         
         while (left < imageWidth):
             # If the bottom and right of the cropping box overruns the image.
@@ -72,10 +67,9 @@ def dice(image_path, out_name, out_ext, outdir, slices):
             dice_path = os.path.join(imgdir, dice_filename)
             working_slice.save(dice_path)
             
-            html_file.write('<td>\n')
             html_file.write(
                 '''
-                <img src="%s/%s"></td>\n
+                --><img class="dicedimage-piece" src="%s/%s"><!--\n
                 ''' % (
                     diced_images_dir.split('/', 1)[1],
                     '/'.join([out_name, dice_filename])
@@ -83,10 +77,10 @@ def dice(image_path, out_name, out_ext, outdir, slices):
                 )
 
             left += sliceWidth # Increment the horizontal position
-        html_file.write('</tr>\n')
+        html_file.write('--></div>\n')
         upper += sliceHeight # Increment the vertical position
         left = 0
-    html_file.write('</table></div>')
+    html_file.write('</div>')
 
 if __name__ == '__main__':
 
@@ -94,7 +88,10 @@ if __name__ == '__main__':
     parser.add_argument("image_file", help="Path to an image file")
     args = parser.parse_args()
     image_path = args.image_file
-    fileName, fileExtension = os.path.splitext(image_path.rsplit('/',1)[1])
+    try:
+        fileName, fileExtension = os.path.splitext(image_path.rsplit('/',1)[1])
+    except IndexError:
+        fileName, fileExtension = os.path.splitext(image_path)
 
     diced_images_dir = os.path.join(HTML_DIR, '_'.join([fileName, 'pieces']))
     if not os.path.exists(diced_images_dir):

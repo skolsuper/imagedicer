@@ -1,6 +1,8 @@
 from PIL import Image
 import os
 import math
+import random
+import string
 import argparse
 
 # Set the root directory
@@ -11,6 +13,7 @@ HTML_DIR = os.path.join(BASE_DIR, 'diced_images')
 def dice(image_path, out_name, out_ext, outdir, slices):
 
     loaddir = outdir.split('/', 1)[1] # Path from html file to images
+    rand_string = ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
     
     img = Image.open(image_path) # Load image
     imageWidth, imageHeight = img.size # Get image dimensions
@@ -48,7 +51,7 @@ def dice(image_path, out_name, out_ext, outdir, slices):
                 padding: 0; margin: 0; border-width: 0;
             }
         </style>
-        <div id="dicedimage">
+        <div id="dicedimage_%(rand_string)s">
         ''' % locals())
 
     left = 0 # Set the left-most edge
@@ -98,7 +101,7 @@ def dice(image_path, out_name, out_ext, outdir, slices):
     html_file.write('</div>')
     html_file.write('''
         <script>
-            var dicedimageDiv = document.getElementById('dicedimage');
+            var dicedimageDiv = document.getElementById('dicedimage_%(rand_string)s');
             var pieces = document.getElementsByClassName('dicedimage-piece');
             var imageBox = dicedimageDiv.parentNode;
 
@@ -111,6 +114,8 @@ def dice(image_path, out_name, out_ext, outdir, slices):
                 }
             }
 
+            imageBox.onscroll();
+
             function isVisible(elm) {
                 var boxWidth = imageBox.innerWidth || screen.availWidth;
                 var boxHeight = imageBox.innerHeight || screen.availHeight;
@@ -120,12 +125,10 @@ def dice(image_path, out_name, out_ext, outdir, slices):
                 if (top < boxHeight && left < boxWidth) {
                     return true;
                 }
-                else { return false; }
+                return false;
             }
         </script>
-        ''')
-    # for dice_path in dice_paths:
-
+        ''' % locals())
 
 if __name__ == '__main__':
 
